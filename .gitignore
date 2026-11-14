@@ -1,0 +1,28 @@
+# ===== 第三方模组（McWW3 = All Rights Reserved，禁止再分发）=====
+libs/
+repo/**/*.jar
+*.jar
+# 例外：自己的产物目录单独放行
+!mods/ww3ai-*.jar
+
+# ===== 反编译输出 =====
+recon/
+
+# ===== 构建环境 =====
+build/
+tools/
+.gradle/
+run/
+logs/
+
+# ===== 本机配置与杂项 =====
+*.log
+*.bak
+*.bak-*
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+
+# ===== 注意：repo/**/*.pom 不忽略（工程自己写的，可公开）=====

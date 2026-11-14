@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="WW3 空战 AI（ww3ai）Mod 介绍与五分钟上手教程：给 McWW3 的无人战机装上会自己飞、会追人、会开火的服务端 AI。">
+<title>WW3 空战 AI · 介绍与上手教程</title>
+<!--
+  设计定调 / Direction note
+  受众：第一次听说 ww3ai 的 Minecraft 玩家与整合包作者。
+  方向：工业实用 / 航空检查单（Industrial utilitarian），不是营销落地页。
+  字体：Bahnschrift（Windows 自带 DIN 风展示字）+ 微软雅黑正文 + Consolas 等宽遥测数字。
+  配色：暖白纸面 #F4F2ED 主导、近黑 #1C1B19、单一信号橙 #C2481A（小字用更深的 #A83B14 保证对比度）。
+  记忆点：贯穿全页的刻度尺、章节大编号、首屏 HUD 准星遥测卡——读起来像一张飞行前检查单。
+  约束：单文件、零外部请求、可离线打开；动效全部可在 prefers-reduced-motion 下关闭。
+-->
+<style>
+:root {
+  --color-bg: #F4F2ED;
+  --color-surface: #FFFFFF;
+  --color-surface-2: #EBE8E1;
+  --color-text: #1C1B19;
+  --color-muted: #5F5C56;
+  --color-accent: #C2481A;
+  --color-accent-ink: #A83B14;
+  --color-accent-soft: #F6E4DC;
+  --color-border: rgba(28, 27, 25, .14);
+  --color-border-strong: rgba(28, 27, 25, .32);
+  --color-code-bg: #232220;
+  --color-code-text: #EFEAE1;
+
+  --font-display: Bahnschrift, "DIN Alternate", "Agency FB", "Microsoft YaHei UI", sans-serif;
+  --font-body: "Microsoft YaHei UI", "PingFang SC", "Hiragino Sans GB", "Microsoft JhengHei", sans-serif;
+  --font-mono: Consolas, "JetBrains Mono", "Courier New", monospace;
+
+  --step: 1.25;
+  --fs-xs: .75rem;
+  --fs-sm: .875rem;
+  --fs-base: 1rem;
+  --fs-md: 1.25rem;
+  --fs-lg: 1.563rem;
+  --fs-xl: 1.953rem;
+  --fs-2xl: 2.441rem;
+  --fs-3xl: 3.052rem;
+  --fs-hero: clamp(3.2rem, 7vw, 6.2rem);
+
+  --space-1: 4px; --space-2: 8px; --space-3: 16px; --space-4: 24px;
+  --space-5: 40px; --space-6: 64px; --space-7: 96px; --space-8: 144px;
+
+  --radius-sm: 2px; --radius-md: 4px; --radius-lg: 8px;
+  --shadow-1: 0 2px 8px rgba(60, 50, 40, .07);
+  --shadow-2: 0 8px 28px rgba(60, 50, 40, .10);
+  --shadow-3: 0 24px 64px rgba(60, 50, 40, .14);
+
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-fast: 170ms; --dur-base: 340ms; --dur-slow: 680ms;
+  --maxw: 1180px;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 92px; }
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-size: var(--fs-base);
+  line-height: 1.78;
+  letter-spacing: .02em;
+  -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 600; line-height: 1.08; letter-spacing: -.02em; margin: 0; }
+p { margin: 0 0 var(--space-3); }
+a { color: inherit; text-decoration: none; }
+a:focus-visible, button:focus-visible, [tabindex]:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
+  border-radius: var(--radius-sm);
+}
+::selection { background: var(--color-accent); color: #fff; }
+
+.skip {
+  position: absolute; left: -9999px; top: 0; z-index: 100;
+  background: var(--color-text); color: #fff; padding: 12px 20px;
+}
+.skip:focus { left: 12px; top: 12px; }
+
+/* 氛围层：细网格 + 顶部刻度带，纯 CSS，无图片请求 */
+.grid-bg {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background-image:
+    linear-gradient(to right, rgba(28,27,25,.055) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(28,27,25,.055) 1px, transparent 1px);
+  background-size: 44px 44px;
+  -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,.9), rgba(0,0,0,.35) 70%, transparent);
+  mask-image: linear-gradient(to bottom, rgba(0,0,0,.9), rgba(0,0,0,.35) 70%, transparent);
+}
+.ruler {
+  position: fixed; top: 0; left: 0; right: 0; height: 6px; z-index: 30;
+  background: repeating-linear-gradient(to right,
+    var(--color-border-strong) 0 1px, transparent 1px 20px);
+  border-bottom: 1px solid var(--color-border);
+}
+.ruler::after {
+  content: ""; position: absolute; left: 0; top: 0; width: 18%; height: 6px;
+  background: var(--color-accent);
+}
+
+.wrap { width: min(100% - 48px, var(--maxw)); margin-inline: auto; position: relative; z-index: 1; }
+
+/* 顶栏 */
+.topbar {
+  position: sticky; top: 6px; z-index: 25;
+  background: rgba(244, 242, 237, .92);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--color-border);
+}
+.topbar-inner { display: flex; align-items: center; gap: var(--space-5); min-height: 62px; }
+.brand { display: flex; align-items: baseline; gap: 10px; white-space: nowrap; font-family: var(--font-display); }
+.brand b { font-size: var(--fs-md); letter-spacing: -.02em; }
+.brand span { font: 500 var(--fs-xs)/1 var(--font-mono); color: var(--color-muted); letter-spacing: .14em; }
+.topnav { display: flex; gap: 2px; margin-left: auto; overflow-x: auto; scrollbar-width: none; }
+.topnav::-webkit-scrollbar { display: none; }
+.topnav a {
+  position: relative; display: flex; align-items: center; min-height: 44px;
+  padding: 0 12px; font-size: var(--fs-sm); color: var(--color-muted); white-space: nowrap;
+  transition: color var(--dur-fast) ease-out;
+}
+.topnav a::after {
+  content: ""; position: absolute; left: 12px; right: 12px; bottom: 8px; height: 2px;
+  background: var(--color-accent); transform: scaleX(0); transform-origin: left;
+  transition: transform var(--dur-base) var(--ease-out);
+}
+.topnav a:hover, .topnav a.active { color: var(--color-text); }
+.topnav a:hover::after, .topnav a.active::after { transform: scaleX(1); }
+.build-tag {
+  font: 500 var(--fs-xs)/1 var(--font-mono); color: var(--color-accent-ink);
+  border: 1px solid var(--color-accent); padding: 7px 10px; white-space: nowrap;
+  background: var(--color-accent-soft);
+}
+
+/* 首屏：非对称 7/5，右侧遥测卡带 HUD 准星 */
+.hero {
+  display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, .85fr);
+  gap: var(--space-6); align-items: end;
+  padding: var(--space-8) 0 var(--space-7);
+  border-bottom: 1px solid var(--color-border);
+}
+.eyebrow {
+  font: 500 var(--fs-xs)/1.4 var(--font-mono); letter-spacing: .22em;
+  color: var(--color-accent-ink); text-transform: uppercase; margin-bottom: var(--space-4);
+  display: flex; align-items: center; gap: 12px;
+}
+.eyebrow::before { content: ""; width: 34px; height: 2px; background: var(--color-accent); }
+.hero h1 { font-size: var(--fs-hero); margin: 0 0 var(--space-4); }
+.hero h1 em { font-style: normal; color: var(--color-accent); }
+.lede { font-size: var(--fs-md); line-height: 1.7; max-width: 34ch; color: var(--color-text); }
+.lede strong { font-weight: 600; border-bottom: 2px solid var(--color-accent); }
+.hero-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: var(--space-5); }
+.chip {
+  font: 500 var(--fs-xs)/1 var(--font-mono); letter-spacing: .06em;
+  border: 1px solid var(--color-border-strong); padding: 9px 12px; color: var(--color-muted);
+  background: rgba(255,255,255,.5);
+}
+.chip.hot { border-color: var(--color-accent); color: var(--color-accent-ink); background: var(--color-accent-soft); }
+
+.telemetry {
+  position: relative; background: var(--color-surface); border: 1px solid var(--color-border);
+  border-top: 3px solid var(--color-accent); box-shadow: var(--shadow-2);
+  padding: var(--space-4) var(--space-4) var(--space-3);
+}
+.telemetry::after {
+  content: ""; position: absolute; right: -1px; bottom: -1px; width: 22px; height: 22px;
+  border-right: 2px solid var(--color-accent); border-bottom: 2px solid var(--color-accent);
+}
+.tel-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: var(--space-4); }
+.tel-head span { font: 500 var(--fs-xs)/1 var(--font-mono); letter-spacing: .18em; color: var(--color-muted); }
+.crosshair { width: 46px; height: 46px; flex: none; }
+.tel-row {
+  display: grid; grid-template-columns: 88px minmax(0, 1fr); gap: 12px;
+  padding: 9px 0; border-top: 1px solid var(--color-border);
+  font-size: var(--fs-sm); align-items: baseline;
+}
+.tel-row dt { font: 500 var(--fs-xs)/1.6 var(--font-mono); letter-spacing: .08em; color: var(--color-muted); text-transform: uppercase; }
+.tel-row dd { margin: 0; font-family: var(--font-mono); font-size: var(--fs-sm); font-variant-numeric: tabular-nums; }
+.tel-row dd b { color: var(--color-accent-ink); font-weight: 600; }
+.tel-foot {
+  margin-top: var(--space-3); padding-top: var(--space-3); border-top: 1px solid var(--color-border);
+  font: 400 var(--fs-xs)/1.7 var(--font-mono); color: var(--color-muted);
+  display: flex; justify-content: space-between; gap: 10px;
+}
+.tel-scale { height: 12px; margin-top: 10px; background: repeating-linear-gradient(to right, var(--color-border-strong) 0 1px, transparent 1px 10px); position: relative; }
+.tel-scale::after { content: ""; position: absolute; left: 62%; top: 0; width: 2px; height: 12px; background: var(--color-accent); }
+
+/* 章节骨架 */
+.section { padding: var(--space-7) 0; border-bottom: 1px solid var(--color-border); }
+.sec-head { display: grid; grid-template-columns: 108px minmax(0, 1fr); gap: var(--space-4); margin-bottom: var(--space-5); align-items: start; }
+.sec-num {
+  font: 600 3.4rem/1 var(--font-display); color: var(--color-accent);
+  letter-spacing: -.05em; font-variant-numeric: tabular-nums;
+  border-top: 3px solid var(--color-accent); padding-top: 8px;
+}
+.sec-head h2 { font-size: var(--fs-2xl); margin: 0 0 8px; }
+.sec-head p { color: var(--color-muted); max-width: 62ch; margin: 0; font-size: var(--fs-sm); }
+.body-grid { display: grid; grid-template-columns: 108px minmax(0, 1fr); gap: var(--space-4); }
+.body-grid > * { min-width: 0; }
+.body-grid > .full { grid-column: 1 / -1; }
+.prose { max-width: 74ch; font-size: var(--fs-base); }
+.prose h3 { font-size: var(--fs-md); margin: var(--space-5) 0 var(--space-2); }
+.prose ul, .prose ol { padding-left: 1.3em; margin: 0 0 var(--space-3); }
+.prose li { margin-bottom: 6px; }
+.prose code, td code, .step code {
+  font-family: var(--font-mono); font-size: .9em; background: var(--color-surface-2);
+  padding: 2px 5px; border: 1px solid var(--color-border); border-radius: var(--radius-sm);
+}
+.callout {
+  border-left: 3px solid var(--color-accent); background: var(--color-surface);
+  padding: var(--space-3) var(--space-4); margin: var(--space-4) 0;
+  font-size: var(--fs-sm); box-shadow: var(--shadow-1);
+}
+.callout strong { color: var(--color-accent-ink); }
+.callout.neutral { border-color: var(--color-border-strong); }
+
+/* 能力 / 边界：非对称两栏，非统一卡片 */
+.split { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, .85fr); gap: var(--space-6); }
+.cap-list { display: grid; gap: 0; border-top: 1px solid var(--color-border-strong); }
+.cap {
+  display: grid; grid-template-columns: 132px minmax(0, 1fr); gap: var(--space-4);
+  padding: 14px 0; border-bottom: 1px solid var(--color-border); align-items: baseline;
+  transition: background var(--dur-fast) ease-out, padding-left var(--dur-fast) var(--ease-out);
+}
+.cap:hover { background: rgba(255,255,255,.7); padding-left: 8px; }
+.cap dt { font-family: var(--font-display); font-size: var(--fs-sm); font-weight: 600; }
+.cap dd { margin: 0; font-size: var(--fs-sm); color: var(--color-muted); }
+.limit-box { background: var(--color-surface-2); padding: var(--space-4); border: 1px solid var(--color-border); }
+.limit-box h3 { font-size: var(--fs-md); margin-bottom: var(--space-3); }
+.limit-box ul { list-style: none; padding: 0; margin: 0; }
+.limit-box li { position: relative; padding: 9px 0 9px 22px; border-top: 1px solid var(--color-border); font-size: var(--fs-sm); color: var(--color-muted); }
+.limit-box li:first-child { border-top: 0; }
+.limit-box li::before { content: ""; position: absolute; left: 0; top: 18px; width: 10px; height: 2px; background: var(--color-accent); }
+
+/* 表格 */
+.table-wrap { overflow-x: auto; border: 1px solid var(--color-border); background: var(--color-surface); }
+table { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); }
+caption { text-align: left; font: 500 var(--fs-xs)/1.4 var(--font-mono); letter-spacing: .12em; color: var(--color-muted); padding: 12px 16px; border-bottom: 1px solid var(--color-border); }
+th, td { text-align: left; padding: 12px 16px; border-bottom: 1px solid var(--color-border); vertical-align: top; }
+thead th { font-family: var(--font-display); font-size: var(--fs-sm); font-weight: 600; background: var(--color-surface-2); }
+tbody tr:last-child td { border-bottom: 0; }
+tbody tr { transition: background var(--dur-fast) ease-out; }
+tbody tr:hover { background: #FBF7F4; }
+td code { background: var(--color-surface-2); }
+.cmd { font-family: var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; color: var(--color-accent-ink); font-weight: 600; }
+
+/* 代码块 + 复制 */
+.codeblock { position: relative; margin: var(--space-3) 0 var(--space-4); }
+.codeblock pre {
+  margin: 0; padding: 16px 76px 16px 18px; overflow-x: auto;
+  background: var(--color-code-bg); color: var(--color-code-text);
+  font: 400 var(--fs-sm)/1.7 var(--font-mono); border-left: 3px solid var(--color-accent);
+}
+/* 行内 code 的浅底样式会命中 <pre><code>，把近白文字盖在浅色底上变成"空白条" */
+.codeblock pre code {
+  background: none; border: 0; padding: 0; border-radius: 0;
+  color: inherit; font: inherit; font-size: inherit;
+}
+.copy {
+  position: absolute; right: 8px; top: 8px; min-width: 60px; min-height: 34px;
+  background: rgba(255,255,255,.08); color: var(--color-code-text);
+  border: 1px solid rgba(255,255,255,.26); font: 500 var(--fs-xs)/1 var(--font-mono);
+  cursor: pointer; transition: background var(--dur-fast), border-color var(--dur-fast);
+}
+.copy:hover { background: var(--color-accent); border-color: var(--color-accent); }
+.copy.done { color: #B9E4C9; border-color: #B9E4C9; }
+
+/* 步骤时间线 */
+.steps { list-style: none; padding: 0; margin: 0; counter-reset: st; }
+.step {
+  position: relative; padding: 0 0 var(--space-5) 62px;
+  border-left: 1px solid var(--color-border-strong); margin-left: 17px;
+}
+.step:last-child { border-left-color: transparent; padding-bottom: 0; }
+.step::before {
+  counter-increment: st; content: counter(st, decimal-leading-zero);
+  position: absolute; left: -18px; top: -2px; width: 36px; height: 36px;
+  display: grid; place-items: center; background: var(--color-bg);
+  border: 1px solid var(--color-accent); color: var(--color-accent-ink);
+  font: 600 var(--fs-xs)/1 var(--font-mono);
+}
+.step h3 { font-size: var(--fs-md); margin-bottom: 6px; }
+.step p { font-size: var(--fs-sm); color: var(--color-muted); max-width: 70ch; }
+.check {
+  display: inline-flex; align-items: center; gap: 8px; margin-top: 8px;
+  font: 500 var(--fs-xs)/1.5 var(--font-mono); color: var(--color-accent-ink);
+}
+.check::before { content: ""; width: 14px; height: 2px; background: var(--color-accent); }
+
+/* 入口三栏：打破等高卡片 */
+.entries { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; border: 1px solid var(--color-border); background: var(--color-surface); }
+.entry { padding: var(--space-4); border-right: 1px solid var(--color-border); }
+.entry:last-child { border-right: 0; }
+.entry:nth-child(2) { background: var(--color-surface-2); }
+.entry .idx { font: 500 var(--fs-xs)/1 var(--font-mono); letter-spacing: .14em; color: var(--color-accent-ink); }
+.entry h3 { font-size: var(--fs-lg); margin: 14px 0 10px; }
+.entry p { font-size: var(--fs-sm); color: var(--color-muted); margin: 0; }
+.entry .key { display: inline-block; margin-top: 14px; font: 600 var(--fs-sm)/1 var(--font-mono); border: 1px solid var(--color-border-strong); padding: 8px 11px; background: var(--color-bg); }
+
+/* 进阶路线 */
+.advanced { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; background: var(--color-border); border: 1px solid var(--color-border); }
+.adv { background: var(--color-surface); padding: var(--space-4); }
+.adv .n { font: 600 var(--fs-lg)/1 var(--font-display); color: var(--color-accent); }
+.adv h3 { font-size: var(--fs-md); margin: 10px 0 6px; }
+.adv p { font-size: var(--fs-sm); color: var(--color-muted); margin: 0; }
+
+/* 页脚 */
+footer { padding: var(--space-6) 0 var(--space-7); }
+.footer-inner { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--space-4); align-items: end; }
+.footer-inner p { font-size: var(--fs-sm); color: var(--color-muted); margin: 0; }
+.footer-mark { font: 600 clamp(2.4rem, 6vw, 5rem)/.9 var(--font-display); letter-spacing: -.05em; color: var(--color-surface-2); -webkit-text-stroke: 1px var(--color-border-strong); }
+
+/* 入场编排：5 组错峰 + 滚动 reveal */
+.reveal { opacity: 0; transform: translateY(22px); }
+.reveal.in { opacity: 1; transform: none; transition: opacity var(--dur-base) var(--ease-out), transform var(--dur-base) var(--ease-out); }
+.hero .eyebrow, .hero h1, .hero .lede, .hero .hero-meta, .telemetry { opacity: 0; animation: rise var(--dur-slow) var(--ease-out) forwards; }
+.hero .eyebrow { animation-delay: 60ms; }
+.hero h1 { animation-delay: 140ms; }
+.hero .lede { animation-delay: 220ms; }
+.hero .hero-meta { animation-delay: 300ms; }
+.telemetry { animation-delay: 380ms; }
+@keyframes rise { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation-duration: .01ms !important; animation-delay: 0ms !important; transition-duration: .01ms !important; }
+  .reveal, .hero .eyebrow, .hero h1, .hero .lede, .hero .hero-meta, .telemetry { opacity: 1; transform: none; }
+}
+
+@media (max-width: 960px) {
+  .hero { grid-template-columns: 1fr; gap: var(--space-5); padding: var(--space-7) 0 var(--space-6); }
+  .telemetry { max-width: 560px; }
+  .split { grid-template-columns: 1fr; gap: var(--space-5); }
+  .sec-head, .body-grid { grid-template-columns: 72px minmax(0, 1fr); }
+  .sec-num { font-size: 2.6rem; }
+  .entries { grid-template-columns: 1fr; }
+  .entry { border-right: 0; border-bottom: 1px solid var(--color-border); }
+  .entry:last-child { border-bottom: 0; }
+  .advanced { grid-template-columns: 1fr; }
+  .build-tag { display: none; }
+}
+@media (max-width: 560px) {
+  .wrap { width: min(100% - 28px, var(--maxw)); }
+  .section { padding: var(--space-6) 0; }
+  .sec-head, .body-grid { grid-template-columns: 1fr; gap: var(--space-2); }
+  .sec-num { font-size: 2rem; border-top-width: 2px; width: 62px; }
+  .body-grid > .full { grid-column: 1; }
+  .cap { grid-template-columns: 1fr; gap: 2px; }
+  .tel-row { grid-template-columns: 76px minmax(0, 1fr); }
+  .step { padding-left: 48px; }
+  th, td { padding: 10px 12px; }
+  .hero h1 { letter-spacing: -.03em; }
+}
+</style>
+<noscript><style>
+  .reveal { opacity: 1; transform: none; }
+  .hero .eyebrow, .hero h1, .hero .lede, .hero .hero-meta, .telemetry { opacity: 1; animation: none; }
+  .copy { display: none; }
+</style></noscript>
+</head>
+<body>
+<div class="grid-bg" aria-hidden="true"></div>
+<div class="ruler" aria-hidden="true"></div>
+<a class="skip" href="#main">跳到正文</a>
+
+<header class="topbar">
+  <div class="wrap topbar-inner">
+    <a class="brand" href="#top"><b>WW3 空战 AI</b><span>ww3ai</span></a>
+    <nav class="topnav" aria-label="页内导航">
+      <a href="#about">介绍</a>
+      <a href="#capabilities">能力</a>
+      <a href="#install">安装</a>
+      <a href="#quickstart">上手</a>
+      <a href="#commands">命令</a>
+      <a href="#advanced">进阶</a>
+      <a href="#troubleshoot">排障</a>
+    </nav>
+    <span class="build-tag">v1.0.0 / b138</span>
+  </div>
+</header>
+
+<main id="main">
+  <section class="hero wrap" id="top" aria-labelledby="hero-title">
+    <div>
+      <p class="eyebrow">Forge Mod · 服务端空战 AI · 飞行前检查单</p>
+      <h1 id="hero-title">给无人战机<br><em>装一个飞行员</em></h1>
+      <p class="lede">接管 McWW3 里没有驾驶员的飞机，替它完成搜索、追击、能量管理、失速保护与开火。规则层每秒 20 次管杆舵，可选的大模型每秒 0.5–2 次只管战术——<strong>模型永远不碰操纵面</strong>，断网最多让它变笨，不会让它掉下来。</p>
+      <div class="hero-meta">
+        <span class="chip hot">MC 1.20.1</span>
+        <span class="chip">Forge 47.4.29</span>
+        <span class="chip">ww3 2.1-beta</span>
+        <span class="chip">无 Mixin / 无 AT</span>
+        <span class="chip">全部服务端</span>
+      </div>
+    </div>
+
+    <aside class="telemetry" aria-label="版本与环境遥测">
+      <div class="tel-head">
+        <span>UNIT / ww3ai-01</span>
+        <svg class="crosshair" viewBox="0 0 46 46" role="img" aria-label="HUD 准星示意图">
+          <circle cx="23" cy="23" r="15" fill="none" stroke="rgba(28,27,25,.28)" stroke-width="1"/>
+          <circle cx="23" cy="23" r="6" fill="none" stroke="#C2481A" stroke-width="1.4"/>
+          <path d="M23 2v10M23 34v10M2 23h10M34 23h10" stroke="#C2481A" stroke-width="1.4" fill="none"/>
+          <circle cx="23" cy="23" r="1.6" fill="#C2481A"/>
+        </svg>
+      </div>
+      <dl style="margin:0">
+        <div class="tel-row"><dt>版本</dt><dd><b>1.0.0</b> / build138</dd></div>
+        <div class="tel-row"><dt>控制频率</dt><dd>20 Hz 规则层</dd></div>
+        <div class="tel-row"><dt>战术频率</dt><dd>0.5–2 Hz（可选）</dd></div>
+        <div class="tel-row"><dt>硬依赖</dt><dd>ww3 + Distant Horizons</dd></div>
+        <div class="tel-row"><dt>侵入性</dt><dd>纯反射，不改本体</dd></div>
+        <div class="tel-row"><dt>权限</dt><dd>OP 2 / 单人开作弊</dd></div>
+      </dl>
+      <div class="tel-scale" aria-hidden="true"></div>
+      <div class="tel-foot"><span>STATUS / READY</span><span>HDG 000 · ALT 120 AGL</span></div>
+    </aside>
+  </section>
+
+  <section class="section wrap reveal" id="about" aria-labelledby="about-h">
+    <div class="sec-head">
+      <div class="sec-num">01</div>
+      <div><h2 id="about-h">这是什么</h2><p>不是脚本回放，是每 tick 读真实姿态与角速度、写输入的闭环控制器。</p></div>
+    </div>
+    <div class="body-grid">
+      <div></div>
+      <div class="prose">
+        <p>McWW3 的飞机本身没有像样的无人 AI。这个 Mod 接管场上<strong>没有驾驶员</strong>的飞机，替它完成一整套空战动作：搜索目标、领先追击、能量管理、失速与触地保护、机炮与导弹开火、被咬尾时脱离。</p>
+        <p>最有意思的一点是<strong>把「怎么飞」和「打谁」彻底分开</strong>：</p>
+        <ul>
+          <li><strong>规则层（20 Hz）</strong>：只管姿态、速度、高度、开火。不依赖网络，永远不会因为模型超时而失去控制。</li>
+          <li><strong>模型层（0.5–2 Hz，可选）</strong>：只在战局突变时给战术意图。OpenAI 兼容协议与 Ollama 都能接；同一场战斗里红机用模型 A、蓝机用模型 B、僚机用预设脚本，互不干扰。</li>
+          <li><strong>战后复盘</strong>：每局结束把决策记录发回模型，自动微调开火距离、油门、高度偏好，条令跨存档累积。</li>
+        </ul>
+        <div class="callout"><strong>你坐进驾驶舱时，AI 立刻放手</strong>——它只读你的位置和航迹，把你当长机，从不写你的输入。杆量归零但油门保持，同时关掉 ww3 自动驾驶，免得接手瞬间吃到满舵。</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section wrap reveal" id="capabilities" aria-labelledby="cap-h">
+    <div class="sec-head">
+      <div class="sec-num">02</div>
+      <div><h2 id="cap-h">能做什么，不做什么</h2><p>边界是设计取舍，不是待办清单。先看清再装，能省掉一半排障时间。</p></div>
+    </div>
+    <div class="body-grid">
+      <div></div>
+      <div class="split">
+        <dl class="cap-list" aria-label="能力一览">
+          <div class="cap"><dt>自主空战</dt><dd>目标搜索、领先追击、能量管理、失速 / 触地保护、自动开火</dd></div>
+          <div class="cap"><dt>编队配合</dt><dd>你开飞机你就是长机；航迹系梯队站位、全队目标分配不重复</dd></div>
+          <div class="cap"><dt>三种战术</dt><dd>按 H 循环 集中火力 / 分散猎杀 / 保护长机；敌方每 5 秒自行判断</dd></div>
+          <div class="cap"><dt>战术动作</dt><dd>12 个攻击相位机、高 yo-yo、防御转弯、notch、撤离、三段追踪律</dd></div>
+          <div class="cap"><dt>武备与蓝图</dt><dd>按挂架换弹种 / 吊舱，存成全存档共享的蓝图，一键换装</dd></div>
+          <div class="cap"><dt>手持部署器</dt><dd>选机型 / 队伍 / 位置，自动算地形高度与航向，成批投放</dd></div>
+          <div class="cap"><dt>多模型接入</dt><dd>多渠道多模型，每架飞机独立选大脑，战后自动复盘</dd></div>
+          <div class="cap"><dt>可观测性</dt><dd>status / diag / ww3ai-models.log 三层诊断</dd></div>
+        </dl>
+        <div class="limit-box">
+          <h3>它不做这些</h3>
+          <ul>
+            <li>不改 ww3 本体，不覆盖你的操纵，不放干扰弹（对红外弹只会机动）。</li>
+            <li>编队是「站位 + 分配」，没有数据链、交叉掩护和撞机规避；一交战就解散。</li>
+            <li>长机是几何基准，不是指挥官——你没法给二号机下「去看六点」的口令。</li>
+            <li>控制符号不自动校准：默认 1/−1/−1 只在 f15e 实测过，混编要按机型二分。</li>
+            <li>AGL 是 heightmap 采样不是射线测距，别当精确高度表用。</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section wrap reveal" id="install" aria-labelledby="install-h">
+    <div class="sec-head">
+      <div class="sec-num">03</div>
+      <div><h2 id="install-h">安装</h2><p>四个依赖，四步确认。版本隔离实例最容易在这一步放错目录。</p></div>
+    </div>
+    <div class="body-grid">
+      <div></div>
+      <div class="prose">
+        <div class="table-wrap">
+          <table>
+            <caption>运行环境 / PREREQUISITES</caption>
+            <thead><tr><th scope="col">项</th><th scope="col">要求</th></tr></thead>
+            <tbody>
+              <tr><td>Minecraft</td><td>1.20.1</td></tr>
+              <tr><td>Forge</td><td>47.4.29（其它 47.x 大多可用）</td></tr>
+              <tr><td>ww3</td><td><strong>必须</strong>，2.1-beta</td></tr>
+              <tr><td>Distant Horizons</td><td><strong>必须</strong>（ww3 的硬依赖）</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <ol style="margin-top:24px">
+          <li>把 <code>ww3ai-1.0.0.jar</code> 放进游戏工作目录的 <code>mods/</code>，确认 ww3 与 distanthorizons 也在。用 PCL 等<strong>版本隔离</strong>实例时，放进该版本自己的 mods 目录。</li>
+          <li>启动游戏，主菜单 → Mods 列表能看到「WW3 Air Combat AI」。</li>
+          <li>单人存档<strong>开启作弊</strong>（Esc → 对局域网开放 → 允许作弊），否则 <code>/ww3ai</code> 会被权限拦下；专用服需权限等级 2。</li>
+          <li>首次启动会生成 <code>config/ww3ai-common.toml</code>。</li>
+        </ol>
+        <div class="codeblock">
+          <pre><code>[ww3ai] constructed; ww3 present = true
+[ww3ai] server starting - AI controller active = true</code></pre>
+          <button class="copy" type="button" data-copy="[ww3ai] constructed; ww3 present = true&#10;[ww3ai] server starting - AI controller active = true">复制</button>
+        </div>
+        <div class="callout"><strong>两个高频坑</strong>：① 全局 <code>mods/</code> 和版本隔离 <code>mods/</code> 只放一份，放两处会触发 <code>Duplicate mod id</code>；② 换 jar 或改配置后必须<strong>完全退出启动器再重开</strong>，只重启游戏无效——PCL 缓存版本 json / mod 列表，Forge 也是启动时才加载类与读配置。</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section wrap reveal" id="quickstart" aria-labelledby="start-h">
+    <div class="sec-head">
+      <div class="sec-num">04</div>
+      <div><h2 id="start-h">五分钟上手</h2><p>从零到看见两架飞机互相咬尾。每一步都带成功判据。</p></div>
+    </div>
+    <div class="body-grid">
+      <div></div>
+      <div>
+        <ol class="steps">
+          <li class="step">
+            <h3>拿部署器</h3>
+            <div class="codeblock"><pre><code>/ww3ai deployer</code></pre><button class="copy" type="button" data-copy="/ww3ai deployer">复制</button></div>
+          </li>
+          <li class="step">
+            <h3>手持它右键，配四样东西</h3>
+            <p>机型 <code>f15e</code>；队伍 <code>red</code>（没有就点「新建」→ 填名字 →「建队」）；高度 <code>150</code> 相对地面；<strong>把「AI驾驶」点成「开」</strong>——这是最常被忘的一步。</p>
+            <div class="callout neutral">「AI驾驶: 关」是停放模式：飞机放地上、油门归零，AI 不碰它，走过去上机自己开。关着时填 150 的高度也只当「放在地上」。AI 空投<strong>最低 120 格离地</strong>，低了服务端直接拒绝——实测低空投放会贴地改出、再也拉不起来。</div>
+          </li>
+          <li class="step">
+            <h3>下一步 → 地图选点 → 投放</h3>
+            <p>点「下一步」在地图上点位置（或直接填 X/Z），再点「投放（AI 驾驶）」。</p>
+            <span class="check">日志出现 took over f15e...，飞机平飞且 5 秒内不掉高度</span>
+          </li>
+          <li class="step">
+            <h3>按 G 打开控制台，点「生成友机」</h3>
+            <p>两架开始互相咬尾。也可以在控制台底部一键配置友 / 敌。</p>
+          </li>
+          <li class="step">
+            <h3>确认战局成立</h3>
+            <div class="codeblock"><pre><code>/ww3ai status</code></pre><button class="copy" type="button" data-copy="/ww3ai status">复制</button></div>
+            <span class="check">tracked=2 且出现 enemy section:</span>
+          </li>
+        </ol>
+        <div class="callout"><strong>打不起来的头号原因</strong>：源码默认 <code>general.targetPlayersOnly=true</code>，只把玩家当目标。想让双方僚机互打，把它改成 <code>false</code>，并在控制台把两队设成敌对——开火需要「有目标 + 敌对关系 + 在射程里」三个条件同时成立。</div>
+        <p style="font-size:var(--fs-sm);color:var(--color-muted)">不想用界面？最快一条：<code>/ww3ai spawn f15e</code> 在你面前的安全点生成并立刻接管，带初速、抬头姿态和满油门；<code>/ww3ai ride</code> 直接坐进刚生成那架。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section wrap reveal" id="entries" aria-labelledby="entries-h">
+    <div class="sec-head">
+      <div class="sec-num">05</div>
+      <div><h2 id="entries-h">三个入口</h2><p>控制台管战场，部署器管投放，命令管效率。</p></div>
+    </div>
+    <div class="body-grid">
+      <div></div>
+      <div class="entries">
+        <div class="entry"><span class="idx">ENTRY / A</span><h3>控制台</h3><p>分阵营、生成友机敌机、改队形、配模型渠道、改挂载与管理蓝图。</p><span class="key">G</span></div>
+        <div class="entry"><span class="idx">ENTRY / B</span><h3>手持部署器</h3><p>选机型 / 队伍 / 位置 / 高度，地图点选成批投放，自动算地形高度与航向。</p><span class="key">右键</span></div>
+        <div class="entry"><span class="idx">ENTRY / C</span><h3>命令</h3><p>最快、可写进命令方块、批量排查。<code>/ww3ai</code> 列出全部子命令。</p><span class="key">/ww3ai</span></div>
+      </div>
+    </div>
+    <div class="body-grid" style="margin-top:16px">
+      <div></div>
+      <p style="font-size:var(--fs-sm);color:var(--color-muted)">按键：<code>G</code> 控制台、<code>H</code> 循环僚机战术、<code>J</code> 编队队形编辑器，可在「选项 → 控制 → WW3 空战 AI」改绑。</p>
+    </div>
+  </section>
+
+  <section class="section wrap reveal" id="commands" aria-labelledby="cmd-h">
+    <div class="sec-head">
+      <div class="sec-num">06</div>
+      <div><h2 id="cmd-h">常用命令速查</h2><p>完整 30 余条见《使用说明书》附录 A。所有命令需要 OP 权限。</p></div>
+    </div>
+    <div class="body-grid">
+      <div></div>
+      <div class="table-wrap">
+        <table>
+          <caption>COMMAND REFERENCE / 高频命令</caption>
+          <thead><tr><th scope="col">命令</th><th scope="col">作用</th></tr></thead>
+          <tbody>
+            <tr><td class="cmd">/ww3ai status</td><td>总览 + 每机一行，最常用</td></tr>
+            <tr><td class="cmd">/ww3ai dump [半径]</td><td>逐架列出距离、机型、坐标、AGL、速度、是否已接管</td></tr>
+            <tr><td class="cmd">/ww3ai spawn [机型]</td><td>面前生成并接管，默认 f15e</td></tr>
+            <tr><td class="cmd">/ww3ai ride [nearest]</td><td>坐进最后生成的那架 / 最近的一架</td></tr>
+            <tr><td class="cmd">/ww3ai adopt [半径]</td><td>把附近无人飞机交给 AI，默认 300 格</td></tr>
+            <tr><td class="cmd">/ww3ai clear [all|vehicles|半径]</td><td>一键清场，默认保留你驾驶的那架</td></tr>
+            <tr><td class="cmd">/ww3ai deployer</td><td>拿部署器</td></tr>
+            <tr><td class="cmd">/ww3ai prepare</td><td>一键配好两队 + 玩家入我方 + 附近飞机进敌方 + 关系敌对</td></tr>
+            <tr><td class="cmd">/ww3ai relation &lt;队&gt; &lt;enemy|neutral|ally&gt;</td><td>设两队关系</td></tr>
+            <tr><td class="cmd">/ww3ai assign [队]</td><td>附近载具批量入队；省略队名 = 全变你的僚机</td></tr>
+            <tr><td class="cmd">/ww3ai section / focus|split|guard</td><td>看战术与敌机架数 / 钉住友军战术</td></tr>
+            <tr><td class="cmd">/ww3ai on | off</td><td>运行时开关 AI</td></tr>
+            <tr><td class="cmd">/ww3ai diag &lt;true|false&gt;</td><td>逐机详细诊断日志</td></tr>
+            <tr><td class="cmd">/ww3ai models / blueprints / teams</td><td>列模型渠道 / 蓝图 / 队伍</td></tr>
+            <tr><td class="cmd">/ww3ai signs</td><td>列控制符号与按机型覆写</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="section wrap reveal" id="advanced" aria-labelledby="adv-h">
+    <div class="sec-head">
+      <div class="sec-num">07</div>
+      <div><h2 id="adv-h">进阶路线</h2><p>打起来之后，按这个顺序解锁剩下四块能力。</p></div>
+    </div>
+    <div class="body-grid">
+      <div></div>
+      <div class="advanced">
+        <div class="adv"><span class="n">01</span><h3>带一个小队</h3><p>自己坐进一架 → <code>/ww3ai assign</code>（不带参数）把附近飞机变成僚机 → 按 H 切三态、按 J 拖队形。敌机进 700 m 时僚机自动脱队交战。</p></div>
+        <div class="adv"><span class="n">02</span><h3>换挂载 / 存蓝图</h3><p>部署器里点机型右侧「武备 / 蓝图」，逐挂点换弹，存成全存档共享的蓝图，<code>/ww3ai blueprints</code> 查看。</p></div>
+        <div class="adv"><span class="n">03</span><h3>接大模型</h3><p>按 G →「模型接入」加渠道（OpenAI 兼容 / Ollama）→ 测试连接 → 拉模型列表 → 在武备页绑模型。看 <code>ww3ai-models.log</code> 的 DECISION。</p></div>
+        <div class="adv"><span class="n">04</span><h3>复盘与调参</h3><p><code>/ww3ai doctrine</code> 看战后微调的参数。飞机发抖先降 <code>flight.ratePGain</code>（当前默认 0.60），反应迟钝再往回加——一次只改一个。</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section wrap reveal" id="troubleshoot" aria-labelledby="ts-h">
+    <div class="sec-head">
+      <div class="sec-num">08</div>
+      <div><h2 id="ts-h">排障：最常见的五个坑</h2><p>先按这张表过一遍，再翻两份手册的详细排查章节。</p></div>
+    </div>
+    <div class="body-grid">
+      <div></div>
+      <div class="table-wrap">
+        <table>
+          <caption>TROUBLESHOOTING / 快速定位</caption>
+          <thead><tr><th scope="col">症状</th><th scope="col">先查</th></tr></thead>
+          <tbody>
+            <tr><td>投放后飞机停在地上不动</td><td>部署器的「AI驾驶」没打开（关 = 停放自用）</td></tr>
+            <tr><td>两架飞机互相无视</td><td><code>general.targetPlayersOnly</code> 是不是 true；两队关系是不是敌对（<code>/ww3ai teams</code>）</td></tr>
+            <tr><td>飞机放出来了但 AI 不接管</td><td><code>/ww3ai status</code> 看 aircraft / untagged，再 <code>/ww3ai adopt 300</code>，还不行用 <code>/ww3ai dump</code></td></tr>
+            <tr><td>换了 jar / 改了配置却没变化</td><td>没有<strong>完全退出启动器</strong>再重开；Forge 只在启动时加载类和读配置</td></tr>
+            <tr><td>高度填 60 被拒绝</td><td>AI 空投下限 120 m AGL，防贴地改出的硬门槛，不建议调低</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="section wrap reveal" id="more" aria-labelledby="more-h">
+    <div class="sec-head">
+      <div class="sec-num">09</div>
+      <div><h2 id="more-h">去哪看更多</h2><p>这份是入口，下面四份是完整资料。</p></div>
+    </div>
+    <div class="body-grid">
+      <div></div>
+      <div class="table-wrap">
+        <table>
+          <caption>DOCUMENT INDEX</caption>
+          <thead><tr><th scope="col">文档</th><th scope="col">内容</th></tr></thead>
+          <tbody>
+            <tr><td>docs/使用说明书.md</td><td>按「我要做什么」组织的操作手册，每条带成功判据、命令总表、五分钟验证清单</td></tr>
+            <tr><td>docs/使用指南.md</td><td>原理、追踪几何、机动仲裁、模型链路、配置速查、故障排查、已知边界</td></tr>
+            <tr><td>docs/ww3-物理基线.md</td><td>飞行模型参数体系与标定方法</td></tr>
+            <tr><td>README.md</td><td>项目介绍、安装与依赖、许可说明</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap footer-inner">
+    <div>
+      <p style="margin-bottom:8px">面向第一次接触 ww3ai 的玩家；具体命令行为以当前 jar 的 <code>/ww3ai</code> 帮助为准。</p>
+      <p style="font-family:var(--font-mono);font-size:var(--fs-xs);letter-spacing:.1em">WW3 AIR COMBAT AI · v1.0.0 · BUILD 138 · SERVER-SIDE ONLY</p>
+    </div>
+    <div class="footer-mark" aria-hidden="true">ww3ai</div>
+  </div>
+</footer>
+
+<script>
+(function () {
+  'use strict';
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // 滚动触发的单次入场：只动 opacity / transform
+  var items = document.querySelectorAll('.reveal');
+  if (reduce || !('IntersectionObserver' in window)) {
+    items.forEach(function (el) { el.classList.add('in'); });
+  } else {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
+      });
+    }, { rootMargin: '0px 0px -8% 0px', threshold: 0.06 });
+    items.forEach(function (el) { io.observe(el); });
+  }
+
+  // 顶栏当前章节高亮
+  var links = Array.prototype.slice.call(document.querySelectorAll('.topnav a'));
+  var sections = links.map(function (a) { return document.querySelector(a.getAttribute('href')); }).filter(Boolean);
+  if ('IntersectionObserver' in window && sections.length) {
+    var nav = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        links.forEach(function (a) {
+          a.classList.toggle('active', a.getAttribute('href') === '#' + e.target.id);
+        });
+      });
+    }, { rootMargin: '-25% 0px -65% 0px' });
+    sections.forEach(function (s) { nav.observe(s); });
+  }
+
+  // 命令块一键复制：<pre> 的实际文本是唯一数据源（多行完整、不会和属性写歪），
+  // 并覆盖 iframe / 非安全上下文里 clipboard API 被拒绝的情况。
+  function fallbackCopy(text, pre) {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly', '');
+    ta.style.position = 'fixed'; ta.style.top = '0'; ta.style.left = '-9999px';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    var ok = false;
+    try { ok = document.execCommand('copy'); } catch (err) { ok = false; }
+    document.body.removeChild(ta);
+    if (!ok && pre && window.getSelection && document.createRange) {
+      // 最后兜底：帮用户把命令选中，提示手动 Ctrl+C
+      var range = document.createRange();
+      range.selectNodeContents(pre);
+      var sel = window.getSelection();
+      sel.removeAllRanges(); sel.addRange(range);
+    }
+    return ok;
+  }
+
+  document.querySelectorAll('.copy').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var block = btn.parentNode;
+      var pre = block ? block.querySelector('pre') : null;
+      var text = pre ? (pre.textContent || '').replace(/\s+$/, '') : '';
+      if (!text) text = btn.getAttribute('data-copy') || '';
+      if (!text) return;
+
+      var done = function (state, hold) {
+        btn.textContent = state;
+        btn.classList.toggle('done', state === '已复制');
+        window.setTimeout(function () {
+          btn.textContent = '复制';
+          btn.classList.remove('done');
+        }, hold || 1600);
+      };
+      var onFail = function () {
+        done(fallbackCopy(text, pre) ? '已复制' : '请按 Ctrl+C', 3200);
+      };
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        try {
+          navigator.clipboard.writeText(text).then(function () { done('已复制'); }, onFail);
+        } catch (err) { onFail(); }
+      } else {
+        onFail();
+      }
+    });
+  });
+})();
+</script>
+</body>
+</html>
