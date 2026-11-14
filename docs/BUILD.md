@@ -30,7 +30,7 @@ export JAVA_HOME=<你的 JDK 17 路径>
 
 1. **发行 jar 必须取构建链的 `renameJar` 产物**，不要用带 `-unobfuscated` 后缀的裸 jar。
    后者对 vanilla 方法的调用名没有对齐运行时环境，进游戏会 `NoSuchMethodError`。
-2. **禁止代理**，走直连构建脚本；`javap` 之类工具用 JDK 自带版本的绝对路径调用。
+2. **构建走直连脚本，不经过代理**；工具链统一使用 JDK 17 自带的版本，避免版本错配。
 
 ## 产出物校验
 
