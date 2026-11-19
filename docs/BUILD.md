@@ -1,11 +1,17 @@
 # 构建说明
 
+> **初版文档 build138**
+> 这份文档保留初版的功能、参数和操作记录。中英双语版的当前用法请看[中文首页](../README.md)、[English README](../README.en.md) 或[双语玩家手册](WW3AI-Player-Manual-ZH-EN.pdf)。
+>
+> **Original release documentation for build138**
+> This document records the original release. For the bilingual release, use the linked READMEs or player manual above.
+
 > **本发布仓库只含可执行 jar 与文档，不含源码与构建脚本。**
 > 只是安装使用 Mod 的话，直接看 [`mod-guide.html`](mod-guide.html) 即可，不需要本文。
 > 下文适用于「你在自己的源码工程里从零构建 ww3ai」的场景。
 >
-> 为什么这里没有源码：本项目完全由 AI 助手 WorkBuddy 生成，作者本人不懂代码，
-> 公开仓库只发可执行 jar 与文档，不维护、也不提供源码工程。
+> 主体由 hy4＋ds4.1f 开发，复核和改进由 gpt6.1sol 完成。
+> 当前发布仓库提供 JAR 和文档。下文记录早期构建环境，直接克隆本仓库还不能重新构建。
 
 ## 需要自行准备
 

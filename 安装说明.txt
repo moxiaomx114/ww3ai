@@ -1,50 +1,60 @@
-﻿ww3ai 1.0.0  发布包  (build138 / 2026-11-14)
+WW3AI 中英双语版安装说明
+WW3AI Bilingual Release Installation
 
-  【作者说明】本项目 100% 由 AI 编程助手 WorkBuddy 生成（纯「薅羊毛」式创作），
-              作者本人不懂代码，按说明照做即可，无法提供源码级支持。
-================================================================
+主体由 hy4＋ds4.1f 开发，复核和改进由 gpt6.1sol 完成。
+The main development was done by hy4＋ds4.1f.
+Review and improvements were completed by gpt6.1sol.
 
-【先读这个】双击  docs\mod-guide.html  打开介绍与五分钟上手教程。
-          该页面零外部依赖，断网也能看；命令块支持一键复制。
+简体中文
 
-----------------------------------------------------------------
-一、包内文件
-----------------------------------------------------------------
-  mods\ww3ai-1.0.0.jar        Mod 本体（唯一需要放进游戏的文件）
-  docs\mod-guide.html          介绍 + 教程，单页 HTML，入口
-  docs\MOD介绍与教程.md        同内容的 Markdown 版，可贴百科 / 论坛 / GitHub
-  docs\使用说明书.md            按「我要做什么」组织的操作手册
-  docs\使用指南.md              原理、配置速查、故障排查、已知边界
-  docs\ww3-物理基线.md          ww3 气动常数与公式（进阶）
-  README.md                     工程说明（实现细节与编译，开发向）
+运行环境
+Minecraft Java 1.20.1、Forge 47.4.29、McWW3 2.1-beta。
+还需要与当前 McWW3 组合兼容的 Forge 版 Distant Horizons。
 
-----------------------------------------------------------------
-二、前置依赖（本包不含第三方 Mod，请自行获取）
-----------------------------------------------------------------
-  Minecraft        1.20.1
-  Forge            47.4.29   (要求 [47,))
-  ww3              2.1-beta  (modId: ww3)
-  Distant Horizons 任意版本  (modId: distanthorizons)
+安装
+1. 退出游戏。从 GitHub Releases 下载 ww3ai-bilingual-tools.jar。
+2. 升级时移出当前实例 mods 文件夹里旧的 WW3AI JAR。
+3. 把新 JAR 放进该实例的 mods 文件夹，每个实例只放一份。
+4. 联机时，客户端和服务器都安装同一份 WW3AI 发布包。
+5. 启动游戏，进入世界后按 G。右上角 EN 切到英文，中文切回来。
 
-  后两项是 mods.toml 里的强制依赖，缺失会直接导致启动失败。
+仓库中的 mods/ww3ai-1.0.0.jar 与 Release 附件
+ww3ai-bilingual-tools.jar 是同一个版本，两者选一份安装即可。
+游戏内版本号仍显示 1.0.0。
 
-----------------------------------------------------------------
-三、安装
-----------------------------------------------------------------
-  1. 把 mods\ww3ai-1.0.0.jar 复制进游戏实例的 mods 目录：
-        普通实例    .minecraft\mods\
-        版本隔离    .minecraft\versions\<版本名>\mods\
-     只放一份：全局 mods 与版本隔离 mods 不要同时存在 ww3ai jar。
-  2. 完全退出启动器（PCL）后重新启动游戏。
-     Forge 只在启动时加载 jar 与配置，热替换 jar 不生效。
-  3. 首次启动会生成 config\ww3ai-common.toml，默认即可用。
-  4. 进存档后看 docs\mod-guide.html 的「五分钟上手」逐条验证。
+从这里开始
+双语玩家手册在 docs/WW3AI-Player-Manual-ZH-EN.pdf。
+两种部署器都在创造模式的「工具与实用物品」栏。
+G 开控制台，H 切僚机命令，J 开编队编辑。
+想开 5v5，按 README 的说明调整 targetPlayersOnly 和 maxVehicles。
 
-----------------------------------------------------------------
-四、校验
-----------------------------------------------------------------
-  ww3ai-1.0.0.jar  SHA-256:
-  7bf140eb6a7247d86f12cc509be630cf03c181f12929262f70923947ad91d0d9
+English
 
-  本包内 jar 与已部署到实机的版本完全一致。
-  换 jar 后若行为没变化，先确认是否真的完全重开了启动器。
+Requirements
+Minecraft Java 1.20.1, Forge 47.4.29 and McWW3 2.1-beta.
+Use a Forge build of Distant Horizons compatible with your McWW3 setup.
+
+Install
+1. Close the game. Download ww3ai-bilingual-tools.jar from GitHub Releases.
+2. Move the old WW3AI JAR out of the instance's mods folder.
+3. Put the new JAR in that folder. Keep one copy per instance.
+4. For multiplayer, install the same WW3AI release on the client and server.
+5. Enter a world and press G. Click EN in the top right for English.
+   Click 中文 to switch back. The game remembers your choice.
+
+The repository's mods/ww3ai-1.0.0.jar and the release asset
+ww3ai-bilingual-tools.jar have identical contents. Install either one.
+The in-game mod version still reads 1.0.0.
+
+Start here
+Open docs/WW3AI-Player-Manual-ZH-EN.pdf for the bilingual player manual.
+Both deployers are in Creative mode under Tools & Utilities.
+G opens the console, H cycles wingman orders, and J opens the formation editor.
+For a 5v5, follow the README steps for targetPlayersOnly and maxVehicles.
+
+JAR SHA-256
+
+6592fafd01fb4eacaab495ea31bf29f22b9df8862d64862666cb91a11ab00d6f
+
+GitHub
+https://github.com/moxiaomx114/ww3ai

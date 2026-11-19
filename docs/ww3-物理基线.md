@@ -1,5 +1,12 @@
 # 飞行模型参数体系与标定方法
 
+> **初版文档 build138**
+> 这份文档保留初版的功能、参数和操作记录。中英双语版的当前用法请看[中文首页](../README.md)、[English README](../README.en.md) 或[双语玩家手册](WW3AI-Player-Manual-ZH-EN.pdf)。
+>
+> **Original release documentation for build138**
+> This document records the original release. For the bilingual release, use the linked READMEs or player manual above.
+
+
 > 本文描述「有哪些参数类型、各自影响什么、我们如何标定」，供调参和排障时定位问题。
 > **本文不附任何第三方参数原值、字节码或反编译产物**；具体数值请从你本地安装的
 > ww3 content pack 读取，不同版本可能变化，照抄别人的数字既不可靠也没有许可依据。

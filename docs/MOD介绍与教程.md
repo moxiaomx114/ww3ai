@@ -1,5 +1,12 @@
 # WW3 空战 AI（ww3ai）
 
+> **初版文档 build138**
+> 这份文档保留初版的功能、参数和操作记录。中英双语版的当前用法请看[中文首页](../README.md)、[English README](../README.en.md) 或[双语玩家手册](WW3AI-Player-Manual-ZH-EN.pdf)。
+>
+> **Original release documentation for build138**
+> This document records the original release. For the bilingual release, use the linked READMEs or player manual above.
+
+
 > 给 McWW3 的无人驾驶战斗机装上「会自己飞、会追人、会开火」的服务端 AI。
 > 规则层每秒 20 次管杆舵，可选的大模型每秒 0.5–2 次只管战术——**模型永远不碰操纵面，断网最多让飞机变笨，不会让它掉下来**。
 
@@ -11,7 +18,7 @@
 | 运行 | 全部逻辑在服务端；单人存档开箱即用，专用服需两端同版本 jar |
 | 侵入性 | 纯反射调用，**无 Mixin、无 Access Transformer、不修改 ww3 本体** |
 
-> **关于作者**：本项目 100% 由 AI 编程助手 WorkBuddy 生成 —— 纯「薅羊毛」式创作，作者本人**不懂代码**。照文档操作不需要任何编程基础；但作者也提供不了源码级答疑、二次开发支持或维护承诺，遇到问题请附日志与复现步骤。
+> 主体由 hy4＋ds4.1f 开发，复核和改进由 gpt6.1sol 完成。
 
 ---
 

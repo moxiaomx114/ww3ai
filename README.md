@@ -1,95 +1,69 @@
-# WW3 Air Combat AI（ww3ai）
+# WW3AI 空战模组
 
-给 McWW3 的无人战机装上会自己飞、会追人、会开火的服务端 AI。
+简体中文 · [English](README.en.md)
 
-适用环境：Minecraft 1.20.1 / Forge 47.4.29 / McWW3 2.1-beta。当前版本 `1.0.0`（build138）。
+WW3AI 是 Minecraft 的 McWW3 附属模组。它让飞机自己飞、编队和交战。你可以叫一架僚机陪你飞，也可以在地图上摆好红蓝两队，看它们打一场。内置脚本可以直接用。想试语言模型时，再给队伍绑定模型。
 
-> **免责声明**：本项目为第三方扩展，与 McWW3 作者（Voy7、ChampPG）无隶属或授权关系。
-> 本项目**不包含** McWW3 的任何代码、模型、音效或配置数据，发行 jar 内仅含 `com/ww3ai` 下的类，
-> 仅在运行时通过其公开类接口协作。McWW3 的许可为 `All Rights Reserved`，不可再分发，
-> 其下载与使用请遵守官方许可。Distant Horizons、Minecraft、Forge 同理，权利归各自所有者。
+本页对应中英双语版。游戏内的版本号仍显示 `1.0.0`。
 
----
-
-## 关于作者：先把话说在前面
-
-**这个项目是纯「薅 WorkBuddy 羊毛」做出来的** —— 从代码、反混淆分析、参数整定到仓库里全部文档，
-100% 由 AI 编程助手 WorkBuddy 生成；作者本人**不懂代码**，没有编程背景。
-
-请按「一个玩家用 AI 搓出来、自己装上能跑」的标准来期待它：
-
-- 仓库只发 jar 与文档，没有源码，也提供不了源码级答疑、二次开发指导或定制；
-- Issues 里贴日志和复现步骤最有用；涉及实现细节的问题作者大概率答不上来，能修的会继续交给 AI 迭代；
-- MIT 许可只代表「允许你用」，不代表有人兜底 —— 没有维护承诺，也没有版本计划。
-
-先把预期摆正，省得浪费你的时间。
-
----
-
-## 这个仓库有什么
-
-| 路径 | 内容 |
-| --- | --- |
-| `mods/ww3ai-1.0.0.jar` | 可直接安装的 Mod 本体 |
-| `docs/mod-guide.html` | **入口**：介绍 + 五分钟上手教程，单页、零外部依赖、断网可看 |
-| `docs/MOD介绍与教程.md` | 同内容的 Markdown 版，可贴百科 / 论坛 |
-| `docs/使用说明书.md` | 按「我要做什么」组织的操作手册，带命令总表与验证清单 |
-| `docs/使用指南.md` | 原理、配置速查、故障排查、已知边界 |
-| `docs/ww3-物理基线.md` | 飞行模型参数体系与标定方法 |
-| `docs/BUILD.md` | 构建环境说明 |
-| `LICENSE` | MIT，Copyright (c) 2026 moxiaomx114 |
-
-**本仓库只发布可执行 jar 与文档，不含源码、不含构建脚本，也不含任何第三方模组二进制。**
-
----
-
-## 前置依赖（需自行获取）
-
-| 需要 | 版本 | 来源 |
-| --- | --- | --- |
-| Minecraft | 1.20.1 | 官方启动器 |
-| Forge | 47.4.29（要求 `[47,)`） | Minecraft Forge 官方 |
-| McWW3 | 2.1-beta | https://mcww3.com/download |
-| Distant Horizons | 3.3.3 或兼容版本 | https://modrinth.com/mod/distanthorizons |
-
-`ww3` 与 `distanthorizons` 是 `META-INF/mods.toml` 里的**强制依赖**，缺失会直接导致启动失败。
-本仓库不提供这两项的下载，请按上面的官方渠道自行获取。
-
----
+[下载 WW3AI](https://github.com/moxiaomx114/ww3ai/releases) · [中英双语玩家手册](docs/WW3AI-Player-Manual-ZH-EN.pdf)
 
 ## 安装
 
-1. 把 `mods/ww3ai-1.0.0.jar` 复制进游戏实例的 `mods/` 目录：
-   - 普通实例：`.minecraft/mods/`
-   - 版本隔离实例：`.minecraft/versions/<版本目录>/mods/`
-   - **只放一份**：全局 `mods/` 与版本隔离 `mods/` 同时存在会触发 `Duplicate mod id`。
-2. **完全退出启动器（PCL）再重新打开**。Forge 只在启动时加载 jar 与读配置，热替换不生效。
-3. 首次启动会生成 `config/ww3ai-common.toml`，保持默认值即可运行。
-4. 双击 `docs/mod-guide.html`，按「五分钟上手」逐条验证。
+这版在 **Minecraft Java 1.20.1、Forge 47.4.29 和 McWW3 2.1-beta** 上验证。还需要与 McWW3 配套的 Distant Horizons。
+
+| 前置 | 获取方式 |
+| --- | --- |
+| Minecraft Java 1.20.1 | Minecraft 启动器 |
+| Forge 47.4.29 | [Forge 下载页](https://files.minecraftforge.net/net/minecraftforge/forge/index_1.20.1.html) |
+| McWW3 2.1-beta | [McWW3 下载页](https://mcww3.com/download) |
+| Distant Horizons | [Modrinth](https://modrinth.com/mod/distanthorizons)，选与当前模组组合兼容的 Forge 版 |
+
+1. 退出游戏，在 GitHub Releases 找到中英双语版，下载附件 **ww3ai-bilingual-tools.jar**。
+2. 把 JAR 放进当前游戏实例的 `mods/` 文件夹。升级时先移出旧的 WW3AI JAR，每个实例只留一份。
+3. 启动 Forge 实例，进世界后按 **G**。默认是简体中文，点控制台右上角的 **EN** 切成英文。
+
+仓库中的 `mods/ww3ai-1.0.0.jar` 与这次发布的 `ww3ai-bilingual-tools.jar` 内容相同。
+
+联机时，客户端和服务器请使用同一份 WW3AI 发布包。专用服务器的部分队伍和模型设置需要 OP 权限，批量部署器需要 OP 2。
+
+## 进游戏先试这几个功能
+
+| 想做什么 | 从哪里进 |
+| --- | --- |
+| 叫僚机或生成敌机 | 按 **G** 打开控制台。这里也能建队、改敌友关系、开关 AI 和开火。 |
+| 改僚机命令和队形 | 按 **H** 轮换僚机命令，按 **J** 打开编队编辑并调整号位。 |
+| 放一架飞机 | 从创造模式的「工具与实用物品」拿 **空战部署器**。认紫黑格图标。手持右键，选机型、队伍和武备，再到地图上选点。可交给 AI，也可停在地面自己开。 |
+| 一次放多个小队 | 同一栏拿 **空战编队部署器**。每队选 1–5 架固定翼飞机，每批最多 8 个小队。可保存方案，也可确认后整批部署。 |
+
+武备可以在空战部署器的「武备/蓝图」里存成蓝图。之后在批量部署器里，为同机型的小队选这份蓝图。
+
+### 开一场 5v5
+
+退出游戏或停服，在主机的 `config/ww3ai-common.toml` 的 `[general]` 下改两项，再启动。
+
+    targetPlayersOnly = false
+    maxVehicles = 12
+
+默认上限是 8，5v5 至少需要 10 个空余 AI 名额。重新进世界，在 **G** 控制台打开 AI 和开火，把阵营设为「按 ww3 关系」。载入「双队 5v5」，检查两队的机位和高度，保持「阵营互敌」开启，再点「整批部署」。阵营互敌会改动这个世界里相关队伍的关系。
+
+### 给不同队伍选模型
+
+在 **G → 模型接入** 添加 OpenAI 兼容或 Ollama 渠道，获取模型列表，勾选所需模型并保存。启用渠道和模型总开关，再到 **G → 队伍控制**，选队伍、选「LLM 战术」和模型，点「应用到此队」。另一队单独设置。只想用内置规则时，选「纯脚本」。测试连接和模型请求可能产生服务商费用。
 
 ## 常用命令
 
-| 命令 | 作用 |
+| 命令 | 用途 |
 | --- | --- |
-| `/ww3ai deployer` | 拿手持部署器（选机型 / 队伍 / 位置，成批投放） |
-| `/ww3ai status` | 看接管了哪些飞机、敌我编队与目标分配 |
-| `/ww3ai diag` | 逐机遥测，排障第一入口 |
-| `/ww3ai assign` | 把附近飞机编成自己的僚机队 |
-| `/ww3ai doctrine` | 查看战后微调的战术参数 |
+| `/give @s ww3ai:deployer` | 拿空战部署器 |
+| `/give @s ww3ai:batch_deployer` | 拿空战编队部署器 |
+| `/ww3ai menu` | 打开控制台 |
+| `/ww3ai status` | 查看 AI 状态 |
 
-完整命令表见 `docs/使用说明书.md` 附录。
+`/give` 需要作弊权限或 OP。完整操作步骤见上面的双语玩家手册。
 
-## 已知边界
+遇到问题，请在 [Issues](https://github.com/moxiaomx114/ww3ai/issues) 附上游戏与模组版本、复现步骤和相关日志。贴日志前请移除 API Key 等凭据。
 
-- `flight.cruiseSpeed = 130` 是能量分档与保护阈值的**参考尺**，不是飞机能飞到的速度；油门 trim 由独立的 `flight.trimSpeed = 80` 控制。两者不是一回事，别把前者往下调。
-- `flight.ratePGain` 默认 `0.60`；若杆抖动可小幅下调，反应迟钝再往回加，一次只改一个。
-- Split-S / Wingover / Immelmann / Loop 的最低进入速度写死在 150–200 m/s，当前机型受气动阻力限制达不到，日志里的 `lease REVOKE reason=NO_MANEUVER` 属预期现象。
-- McWW3 的阻力随速度平方增长而推力近似恒定，存在**气动极速**，不存在硬编码的 `maxSpeed`。
-- 更多边界与排障见 `docs/使用指南.md`。
+## 关于项目
 
-## 许可
-
-本仓库中的 jar 与文档按 **MIT** 许可发布，详见 `LICENSE`。
-MIT 允许自由使用、修改、再分发与商用，前提是保留版权声明与许可文本。
-
-第三方组件（McWW3、Distant Horizons、Minecraft、Forge）不在本许可范围内。
+这是 McWW3 的第三方扩展。主体由 hy4＋ds4.1f 开发，复核和改进由 gpt6.1sol 完成。仓库发布 WW3AI 的 JAR 和文档。WW3AI 按 [MIT](LICENSE) 许可发布，McWW3、Distant Horizons 等前置请从各自的发布渠道获取。
